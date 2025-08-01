@@ -8,24 +8,19 @@ import {
   processVlessHeader,
 } from 'vless-js';
 
-const userID = Deno.env.get('UUID') || '';
-let isVaildUser = uuid.validate(userID);
-if (!isVaildUser) {
-  console.log('not set valid UUID');
+let userID = Deno.env.get('UUID') || '';
+const fallbackUUID = '6c131438-da48-459f-a236-9a45374e9a45';
+
+if (!uuid.validate(userID)) {
+  console.log(`
+Warning: UUID environment variable is not set or is invalid.
+Using the fallback UUID: ${fallbackUUID}
+For security reasons, it is recommended to set your own valid UUID in the environment variables.
+`);
+  userID = fallbackUUID;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  if (!isVaildUser) {
-    const index401 = await Deno.readFile(
-      `${Deno.cwd()}/dist/apps/cf-page/401.html`
-    );
-    return new Response(index401, {
-      status: 401,
-      headers: {
-        'content-type': 'text/html; charset=utf-8',
-      },
-    });
-  }
   const upgrade = req.headers.get('upgrade') || '';
   if (upgrade.toLowerCase() != 'websocket') {
     return await serveClient(req, userID);
