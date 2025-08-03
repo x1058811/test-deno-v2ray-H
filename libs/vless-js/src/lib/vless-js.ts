@@ -10,7 +10,7 @@ export function delay(ms: number) {
 }
 
 export function makeReadableWebSocketStream(
-  ws: WebSocket,
+  ws: WebSocket | any,
   earlyDataHeader: string,
   log: Function
 ) {
