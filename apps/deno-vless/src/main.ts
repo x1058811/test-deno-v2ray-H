@@ -10,7 +10,7 @@ import {
   delay,
   makeReadableWebSocketStream,
   processVlessHeader,
-} from 'vless-js.js'; // 从 vless-js.js 导入
+} from 'vless-js'; // 从 vless-js.js 导入
 
 // --- UUID 初始化逻辑 (保持不变) ---
 let userID = Deno.env.get('UUID') || '';
