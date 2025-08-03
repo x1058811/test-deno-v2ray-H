@@ -2,6 +2,9 @@
   "imports": {
     "vless-js": "./libs/vless-js/src/lib/vless-js.ts",
     "uuid": "https://jspm.dev/uuid",
-    "lodash": "https://jspm.dev/lodash-es"
+    "lodash": "https://jspm.dev/lodash-es",
+    "hono": "https://deno.land/x/hono@v4.5.0/mod.ts",
+    "hono/deno": "https://deno.land/x/hono@v4.5.0/deno.ts",
+    "@deno-std/http": "https://deno.land/std@0.170.0/http/server.ts"
   }
 }

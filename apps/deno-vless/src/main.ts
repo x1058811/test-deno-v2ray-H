@@ -1,16 +1,17 @@
 // main.ts (Hono version)
 
-import { Hono } from 'https://deno.land/x/hono@v4.2.1/mod.ts';
-import { serve } from 'https://deno.land/std@0.170.0/http/server.ts';
-import { upgradeWebSocket } from 'https://deno.land/x/hono@v4.2.1/adapter/deno/ssg.ts';
-import * as uuid from 'https://jspm.dev/uuid';
+import { Hono } from 'hono';
+import { upgradeWebSocket } from 'hono/deno';
+import { serveStatic } from 'hono/deno';
+import { serve } from '@deno-std/http';
+import * as uuid from 'uuid';
 import { serveClient } from './client.ts'; // 假设 client.ts 仍然存在
 import {
   closeWebSocket,
   delay,
   makeReadableWebSocketStream,
   processVlessHeader,
-} from 'vless-js'; // 从 vless-js.js 导入
+} from 'vless-js'; // 从 vless-js 导入
 
 // --- UUID 初始化逻辑 (保持不变) ---
 let userID = Deno.env.get('UUID') || '';
