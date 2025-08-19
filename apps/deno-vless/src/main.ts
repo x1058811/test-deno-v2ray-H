@@ -8,22 +8,26 @@ import {
   processVlessHeader,
 } from 'vless-js';
 
-let userID = Deno.env.get('UUID') || '';
+let inboundUserID = Deno.env.get('UUID') || '';
 const fallbackUUID = '6c131438-da48-459f-a236-9a45374e9a45';
 
-if (!uuid.validate(userID)) {
+const OUTBOUND_ADDRESS = "xzq2017.dynv6.net";
+const OUTBOUND_PORT = 30457;
+const OUTBOUND_UUID = "8ba4e124-1307-4287-fe9a-9b0791dfa6d4";
+
+if (!uuid.validate(inboundUserID)) {
   console.log(`
 Warning: UUID environment variable is not set or is invalid.
 Using the fallback UUID: ${fallbackUUID}
 For security reasons, it is recommended to set your own valid UUID in the environment variables.
 `);
-  userID = fallbackUUID;
+  inboundUserID = fallbackUUID;
 }
 
 const handler = async (req: Request): Promise<Response> => {
   const upgrade = req.headers.get('upgrade') || '';
   if (upgrade.toLowerCase() != 'websocket') {
-    return await serveClient(req, userID);
+    return await serveClient(req, inboundUserID);
   }
   const { socket, response } = Deno.upgradeWebSocket(req);
   socket.addEventListener('open', () => {});
@@ -34,7 +38,7 @@ const handler = async (req: Request): Promise<Response> => {
   const earlyDataHeader = req.headers.get('sec-websocket-protocol') || '';
 
   processWebSocket({
-    userID,
+    inboundUserID,
     webSocket: socket,
     earlyDataHeader,
     // rawTCPFactory: (port: number, hostname: string) => {
@@ -48,12 +52,12 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 async function processWebSocket({
-  userID,
+  inboundUserID,
   webSocket,
   earlyDataHeader,
 }: // libs: { uuid, lodash },
 {
-  userID: string;
+  inboundUserID: string;
   webSocket: WebSocket;
   earlyDataHeader: string;
   // rawTCPFactory: (port: number, hostname: string) => Promise<any>;
@@ -99,7 +103,8 @@ async function processWebSocket({
               rawDataIndex,
               vlessVersion,
               isUDP,
-            } = processVlessHeader(vlessBuffer, userID);
+              outboundUUID,
+            } = processVlessHeader(vlessBuffer, inboundUserID, OUTBOUND_UUID);
             address = addressRemote || '';
             portWithRandomLog = `${portRemote}--${Math.random()}`;
             if (isUDP) {
@@ -116,12 +121,28 @@ async function processWebSocket({
             // const addressLength = requestAddr & 0x0f;
             console.log(`[${address}:${portWithRandomLog}] connecting`);
             remoteConnection = await Deno.connect({
-              port: portRemote!,
-              hostname: address,
+              port: OUTBOUND_PORT,
+              hostname: OUTBOUND_ADDRESS,
             });
-            vlessResponseHeader = new Uint8Array([vlessVersion![0], 0]);
-            const rawClientData = vlessBuffer.slice(rawDataIndex!);
-            await remoteConnection!.write(new Uint8Array(rawClientData));
+            // 构建出站 VLESS 协议头
+            const uuidBytes = new Uint8Array(uuid.parse(outboundUUID));
+            const vlessOutboundHeader = new Uint8Array([
+              0, // VLESS 版本
+              ...uuidBytes,
+              0, // 附加信息长度 M
+              1, // 指令(TCP)
+              (portRemote! >> 8) & 0xFF, // 端口高位
+              portRemote! & 0xFF, // 端口低位
+              2, // 地址类型 (域名)
+              address.length, // 地址长度
+              ...new TextEncoder().encode(address) // 地址
+            ]);
+            vlessResponseHeader = new Uint8Array([vlessVersion![0], 0]); // 这个是入站的响应头，出站的流量不需要这个
+            const rawClientData = vlessBuffer.slice(rawDataIndex!); 
+            const outboundData = new Uint8Array(vlessOutboundHeader.length + rawClientData.length);
+            outboundData.set(vlessOutboundHeader, 0);
+            outboundData.set(new Uint8Array(rawClientData), vlessOutboundHeader.length);
+            await remoteConnection!.write(outboundData);
             remoteConnectionReadyResolve(remoteConnection);
           },
           close() {

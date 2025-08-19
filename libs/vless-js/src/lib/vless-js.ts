@@ -102,7 +102,8 @@ export function closeWebSocket(socket: WebSocket | any) {
 // 协议版本，与请求的一致	附加信息长度 N	附加信息 ProtoBuf	响应数据
 export function processVlessHeader(
   vlessBuffer: ArrayBuffer,
-  userID: string
+  inboundUserID: string,
+  outboundUUID: string
   // uuidLib: any,
   // lodash: any
 ) {
@@ -117,7 +118,7 @@ export function processVlessHeader(
   const version = new Uint8Array(vlessBuffer.slice(0, 1));
   let isValidUser = false;
   let isUDP = false;
-  if (stringify(new Uint8Array(vlessBuffer.slice(1, 17))) === userID) {
+  if (stringify(new Uint8Array(vlessBuffer.slice(1, 17))) === inboundUserID) {
     isValidUser = true;
   }
   if (!isValidUser) {
@@ -217,5 +218,6 @@ export function processVlessHeader(
     rawDataIndex: addressValueIndex + addressLength,
     vlessVersion: version,
     isUDP,
+    outboundUUID,
   };
 }
