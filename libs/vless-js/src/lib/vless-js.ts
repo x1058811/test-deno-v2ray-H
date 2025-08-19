@@ -73,7 +73,7 @@ export function makeReadableWebSocketStream(
   });
 }
 
-function base64ToArrayBuffer(base64Str: string) {
+export function base64ToArrayBuffer(base64Str: string) {
   if (!base64Str) {
     return { error: null };
   }
